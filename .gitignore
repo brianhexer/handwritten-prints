@@ -1,3 +1,6 @@
 node_modules/
-# Add .npmrc when you have multiple node binaries.
+dist/
+src/
+vite.config.js
 .npmrc
+# Add .npmrc when you have multiple node binaries.
