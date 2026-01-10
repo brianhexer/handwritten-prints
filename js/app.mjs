@@ -61,21 +61,27 @@ const EVENT_MAP = {
 
       if (targetLangCode && autoOn && paper.textContent.trim()) {
         const originalCursor = document.body.style.cursor;
+        // Always save original English text if not already saved
         if (!paper.dataset.originalHtml) {
           paper.dataset.originalHtml = paper.innerHTML;
         }
         document.body.style.cursor = 'progress';
 
         try {
-          const textToTranslate = paper.textContent.trim();
+          // Always translate from original English content
+          const originalText = paper.dataset.originalHtml
+            .replace(/<[^>]*>/g, '')
+            .trim();
           const translated = await translateText(
-            textToTranslate,
+            originalText,
             targetLangCode
           );
           paper.textContent = translated;
         } catch (error) {
           console.error('Translate on font change error:', error);
           if (lang) {
+            // On translation failure, restore original and apply transliteration
+            paper.innerHTML = paper.dataset.originalHtml;
             applyTransliterationToElement(paper, lang);
           }
         } finally {
