@@ -384,11 +384,7 @@ function detectLangFromOptionLabel(label) {
   }
   // Fallback: try known font names
   const s = label.toLowerCase();
-  if (
-    s.includes('kalam') ||
-    s.includes('kruti-dev') ||
-    s.includes('kruti')
-  )
+  if (s.includes('kalam') || s.includes('kruti-dev') || s.includes('kruti'))
     return 'hindi';
   if (s.includes('anek tamil') || s.includes('kavivanar')) return 'tamil';
   if (s.includes('reem kufi')) return 'arabic';
