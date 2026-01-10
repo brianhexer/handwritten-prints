@@ -266,7 +266,8 @@ const EVENT_MAP = {
 
       if (!targetLang) {
         alert(
-          'Please select a language font (Hindi, Tamil, Arabic, Chinese, Japanese, Korean, Russian) to translate to.'
+          'Please select a language font (Hindi, Tamil, Arabic, Chinese, ' +
+            'Japanese, Korean, Russian) to translate to.'
         );
         return;
       }
@@ -291,9 +292,50 @@ const EVENT_MAP = {
         delete paper.dataset.originalHtml;
       } catch (error) {
         alert(
-          'Translation failed. Please check your internet connection or try again later.'
+          'Translation failed. Please check your internet connection ' +
+            'or try again later.'
         );
         console.error('Translation error:', error);
+      } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+      }
+    }
+  },
+  '#translate-to-english-button': {
+    on: 'click',
+    action: async () => {
+      const fontSelect = document.querySelector('#handwriting-font');
+      const label = fontSelect.options[fontSelect.selectedIndex].text;
+      const sourceLang = getLangCodeFromFontLabel(label) || 'auto';
+
+      const paper = document.querySelector('.page-a .paper-content');
+      const textToTranslate = paper.textContent.trim();
+
+      if (!textToTranslate) {
+        alert('Please enter some text to translate.');
+        return;
+      }
+
+      const button = document.querySelector('#translate-to-english-button');
+      const originalText = button.textContent;
+      button.textContent = 'Translating...';
+      button.disabled = true;
+
+      try {
+        const translated = await translateText(
+          textToTranslate,
+          'en',
+          sourceLang
+        );
+        paper.textContent = translated;
+        delete paper.dataset.originalHtml;
+      } catch (error) {
+        alert(
+          'Translation back to English failed. Please check your ' +
+            'internet connection or try again later.'
+        );
+        console.error('Translation back error:', error);
       } finally {
         button.textContent = originalText;
         button.disabled = false;

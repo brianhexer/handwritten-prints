@@ -22,7 +22,9 @@ async function translateText(text, targetLang, sourceLang = 'en') {
   if (text.length > maxChunkLength) {
     const chunks = text.match(new RegExp(`.{1,${maxChunkLength}}`, 'g')) || [];
     const translatedChunks = await Promise.all(
-      chunks.map((chunk) => translateChunk(chunk, targetLang, sourceLang))
+      chunks.map((chunk) =>
+        translateChunk(chunk, targetLang, sourceLang)
+      )
     );
     return translatedChunks.join('');
   }
@@ -32,9 +34,10 @@ async function translateText(text, targetLang, sourceLang = 'en') {
 
 async function translateChunk(text, targetLang, sourceLang) {
   // Using Google Translate via SimplifyAPI proxy (free, CORS-enabled)
-  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(
-    text
-  )}`;
+  const baseUrl = 'https://translate.googleapis.com/translate_a/single';
+  const url =
+    `${baseUrl}?client=gtx&sl=${sourceLang}&tl=${targetLang}` +
+    `&dt=t&q=${encodeURIComponent(text)}`;
 
   try {
     const response = await fetch(url);
