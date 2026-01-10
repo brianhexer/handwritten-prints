@@ -60,48 +60,26 @@ const EVENT_MAP = {
       const targetLangCode = getLangCodeFromFontLabel(label);
 
       if (targetLangCode && autoOn && paper.textContent.trim()) {
-        // Ask user if they want to translate
-        const shouldTranslate = confirm(
-          `Translate entire document to ${label.split('(')[0].trim()}?`
-        );
+        const originalCursor = document.body.style.cursor;
+        if (!paper.dataset.originalHtml) {
+          paper.dataset.originalHtml = paper.innerHTML;
+        }
+        document.body.style.cursor = 'progress';
 
-        if (shouldTranslate) {
-          const button = document.querySelector('#translate-button');
-          if (button) {
-            const originalText = button.textContent;
-            button.textContent = 'Translating...';
-            button.disabled = true;
-
-            try {
-              const textToTranslate = paper.textContent.trim();
-              const translated = await translateText(
-                textToTranslate,
-                targetLangCode
-              );
-              paper.textContent = translated;
-              delete paper.dataset.originalHtml;
-            } catch (error) {
-              alert(
-                'Translation failed. Using character transliteration instead.'
-              );
-              // Fallback to transliteration
-              if (lang) {
-                if (!paper.dataset.originalHtml) {
-                  paper.dataset.originalHtml = paper.innerHTML;
-                }
-                applyTransliterationToElement(paper, lang);
-              }
-            } finally {
-              button.textContent = originalText;
-              button.disabled = false;
-            }
+        try {
+          const textToTranslate = paper.textContent.trim();
+          const translated = await translateText(
+            textToTranslate,
+            targetLangCode
+          );
+          paper.textContent = translated;
+        } catch (error) {
+          console.error('Translate on font change error:', error);
+          if (lang) {
+            applyTransliterationToElement(paper, lang);
           }
-        } else if (lang) {
-          // User declined translation, use transliteration
-          if (!paper.dataset.originalHtml) {
-            paper.dataset.originalHtml = paper.innerHTML;
-          }
-          applyTransliterationToElement(paper, lang);
+        } finally {
+          document.body.style.cursor = originalCursor;
         }
       } else if (lang && autoOn) {
         // No text yet or transliteration mode, use character mapping
@@ -254,91 +232,6 @@ const EVENT_MAP = {
           }
           applyTransliterationToElement(paper, lang);
         }
-      }
-    }
-  },
-  '#translate-button': {
-    on: 'click',
-    action: async () => {
-      const fontSelect = document.querySelector('#handwriting-font');
-      const label = fontSelect.options[fontSelect.selectedIndex].text;
-      const targetLang = getLangCodeFromFontLabel(label);
-
-      if (!targetLang) {
-        alert(
-          'Please select a language font (Hindi, Tamil, Arabic, Chinese, ' +
-            'Japanese, Korean, Russian) to translate to.'
-        );
-        return;
-      }
-
-      const paper = document.querySelector('.page-a .paper-content');
-      const textToTranslate = paper.textContent.trim();
-
-      if (!textToTranslate) {
-        alert('Please enter some text to translate.');
-        return;
-      }
-
-      const button = document.querySelector('#translate-button');
-      const originalText = button.textContent;
-      button.textContent = 'Translating...';
-      button.disabled = true;
-
-      try {
-        const translated = await translateText(textToTranslate, targetLang);
-        paper.textContent = translated;
-        // Clear original HTML since we've replaced with translation
-        delete paper.dataset.originalHtml;
-      } catch (error) {
-        alert(
-          'Translation failed. Please check your internet connection ' +
-            'or try again later.'
-        );
-        console.error('Translation error:', error);
-      } finally {
-        button.textContent = originalText;
-        button.disabled = false;
-      }
-    }
-  },
-  '#translate-to-english-button': {
-    on: 'click',
-    action: async () => {
-      const fontSelect = document.querySelector('#handwriting-font');
-      const label = fontSelect.options[fontSelect.selectedIndex].text;
-      const sourceLang = getLangCodeFromFontLabel(label) || 'auto';
-
-      const paper = document.querySelector('.page-a .paper-content');
-      const textToTranslate = paper.textContent.trim();
-
-      if (!textToTranslate) {
-        alert('Please enter some text to translate.');
-        return;
-      }
-
-      const button = document.querySelector('#translate-to-english-button');
-      const originalText = button.textContent;
-      button.textContent = 'Translating...';
-      button.disabled = true;
-
-      try {
-        const translated = await translateText(
-          textToTranslate,
-          'en',
-          sourceLang
-        );
-        paper.textContent = translated;
-        delete paper.dataset.originalHtml;
-      } catch (error) {
-        alert(
-          'Translation back to English failed. Please check your ' +
-            'internet connection or try again later.'
-        );
-        console.error('Translation back error:', error);
-      } finally {
-        button.textContent = originalText;
-        button.disabled = false;
       }
     }
   },

@@ -22,9 +22,7 @@ async function translateText(text, targetLang, sourceLang = 'en') {
   if (text.length > maxChunkLength) {
     const chunks = text.match(new RegExp(`.{1,${maxChunkLength}}`, 'g')) || [];
     const translatedChunks = await Promise.all(
-      chunks.map((chunk) =>
-        translateChunk(chunk, targetLang, sourceLang)
-      )
+      chunks.map((chunk) => translateChunk(chunk, targetLang, sourceLang))
     );
     return translatedChunks.join('');
   }
