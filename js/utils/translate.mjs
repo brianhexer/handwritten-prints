@@ -1,56 +1,11 @@
-// Multi-provider translation with fallbacks
-
-const TRANSLATION_APIS = [
-  {
-    name: 'LibreTranslate',
-    url: 'https://libretranslate.com/translate',
-    translate: async (text, target, source) => {
-      const response = await fetch('https://libretranslate.com/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ q: text, source, target, format: 'text' })
-      });
-      if (!response.ok) throw new Error('LibreTranslate failed');
-      const data = await response.json();
-      return data.translatedText;
-    }
-  },
-  {
-    name: 'MyMemory',
-    url: 'https://api.mymemory.translated.net/get',
-    translate: async (text, target, source) => {
-      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
-        text
-      )}&langpair=${source}|${target}`;
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('MyMemory failed');
-      const data = await response.json();
-      if (data.responseStatus !== 200) throw new Error('MyMemory error');
-      return data.responseData.translatedText;
-    }
-  },
-  {
-    name: 'Lingva',
-    url: 'https://lingva.ml/api/v1',
-    translate: async (text, target, source) => {
-      const response = await fetch(
-        `https://lingva.ml/api/v1/${source}/${target}/${encodeURIComponent(
-          text
-        )}`
-      );
-      if (!response.ok) throw new Error('Lingva failed');
-      const data = await response.json();
-      return data.translation;
-    }
-  }
-];
+// Translation using free web APIs compatible with Translate ecosystem
 
 // Language codes mapping
 const LANG_CODES = {
   hindi: 'hi',
   tamil: 'ta',
   arabic: 'ar',
-  chinese: 'zh',
+  chinese: 'zh-CN',
   japanese: 'ja',
   korean: 'ko',
   russian: 'ru',
@@ -62,26 +17,43 @@ const LANG_CODES = {
 };
 
 async function translateText(text, targetLang, sourceLang = 'en') {
-  let lastError = null;
-
-  // Try each API in sequence until one works
-  for (const api of TRANSLATION_APIS) {
-    try {
-      console.log(`Trying ${api.name}...`);
-      const result = await api.translate(text, targetLang, sourceLang);
-      console.log(`${api.name} succeeded`);
-      return result;
-    } catch (error) {
-      console.warn(`${api.name} failed:`, error.message);
-      lastError = error;
-      continue;
-    }
+  // Split long text into chunks (API limits)
+  const maxChunkLength = 500;
+  if (text.length > maxChunkLength) {
+    const chunks = text.match(new RegExp(`.{1,${maxChunkLength}}`, 'g')) || [];
+    const translatedChunks = await Promise.all(
+      chunks.map((chunk) => translateChunk(chunk, targetLang, sourceLang))
+    );
+    return translatedChunks.join('');
   }
 
-  // If all APIs failed, throw the last error
-  throw new Error(
-    `All translation services failed. Last error: ${lastError?.message}`
-  );
+  return translateChunk(text, targetLang, sourceLang);
+}
+
+async function translateChunk(text, targetLang, sourceLang) {
+  // Using Google Translate via SimplifyAPI proxy (free, CORS-enabled)
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(
+    text
+  )}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Translation failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    // Parse Google Translate response format
+    if (data && data[0]) {
+      return data[0].map((item) => item[0]).join('');
+    }
+    throw new Error('Invalid translation response');
+  } catch (error) {
+    console.error('Translation error:', error);
+    throw new Error(
+      'Translation failed. Please check your internet connection and try again.'
+    );
+  }
 }
 
 function getLangCodeFromFontLabel(label) {
