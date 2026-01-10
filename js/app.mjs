@@ -74,10 +74,6 @@ const EVENT_MAP = {
             .trim();
           const translated = await translateText(originalText, targetLangCode);
           paper.textContent = translated;
-          // Clear original if translation succeeded
-          if (translated && translated.trim()) {
-            delete paper.dataset.originalHtml;
-          }
         } catch (error) {
           console.error('Translate on font change error:', error);
           if (lang) {
