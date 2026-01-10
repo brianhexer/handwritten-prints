@@ -9,7 +9,10 @@ import {
   deleteAll
 } from './generate-images.mjs';
 import { setInkColor, toggleDrawCanvas } from './utils/draw.mjs';
-import { detectLangFromOptionLabel, applyTransliterationToElement } from './utils/transliterate.mjs';
+import {
+  detectLangFromOptionLabel,
+  applyTransliterationToElement
+} from './utils/transliterate.mjs';
 import { translateText, getLangCodeFromFontLabel } from './utils/translate.mjs';
 
 /**
@@ -211,32 +214,36 @@ const EVENT_MAP = {
       const fontSelect = document.querySelector('#handwriting-font');
       const label = fontSelect.options[fontSelect.selectedIndex].text;
       const targetLang = getLangCodeFromFontLabel(label);
-      
+
       if (!targetLang) {
-        alert('Please select a language font (Hindi, Tamil, Arabic, Chinese, Japanese, Korean, Russian) to translate to.');
+        alert(
+          'Please select a language font (Hindi, Tamil, Arabic, Chinese, Japanese, Korean, Russian) to translate to.'
+        );
         return;
       }
-      
+
       const paper = document.querySelector('.page-a .paper-content');
       const textToTranslate = paper.textContent.trim();
-      
+
       if (!textToTranslate) {
         alert('Please enter some text to translate.');
         return;
       }
-      
+
       const button = document.querySelector('#translate-button');
       const originalText = button.textContent;
       button.textContent = 'Translating...';
       button.disabled = true;
-      
+
       try {
         const translated = await translateText(textToTranslate, targetLang);
         paper.textContent = translated;
         // Clear original HTML since we've replaced with translation
         delete paper.dataset.originalHtml;
       } catch (error) {
-        alert('Translation failed. Please check your internet connection or try again later.');
+        alert(
+          'Translation failed. Please check your internet connection or try again later.'
+        );
         console.error('Translation error:', error);
       } finally {
         button.textContent = originalText;
@@ -274,21 +281,25 @@ document
       if (!paper.dataset.originalHtml) {
         paper.dataset.originalHtml = paper.innerHTML;
       }
-      
+
       __transliterateApplying = true;
-      
+
       // Save cursor position relative to paper content
       const sel = window.getSelection();
       let cursorOffset = 0;
       let currentNode = null;
-      
+
       if (sel && sel.rangeCount > 0) {
         const range = sel.getRangeAt(0);
         currentNode = range.startContainer;
         cursorOffset = range.startOffset;
-        
+
         // Calculate absolute offset from start of paper
-        const walker = document.createTreeWalker(paper, NodeFilter.SHOW_TEXT, null);
+        const walker = document.createTreeWalker(
+          paper,
+          NodeFilter.SHOW_TEXT,
+          null
+        );
         let absoluteOffset = 0;
         let found = false;
         while (walker.nextNode()) {
@@ -299,19 +310,26 @@ document
           }
           absoluteOffset += walker.currentNode.textContent.length;
         }
-        
+
         if (found) {
           // Apply transliteration
           applyTransliterationToElement(paper, lang);
-          
+
           // Restore cursor by counting through text nodes
-          const walker2 = document.createTreeWalker(paper, NodeFilter.SHOW_TEXT, null);
+          const walker2 = document.createTreeWalker(
+            paper,
+            NodeFilter.SHOW_TEXT,
+            null
+          );
           let currentOffset = 0;
           while (walker2.nextNode()) {
             const nodeLength = walker2.currentNode.textContent.length;
             if (currentOffset + nodeLength >= absoluteOffset) {
               const newRange = document.createRange();
-              newRange.setStart(walker2.currentNode, absoluteOffset - currentOffset);
+              newRange.setStart(
+                walker2.currentNode,
+                absoluteOffset - currentOffset
+              );
               newRange.collapse(true);
               sel.removeAllRanges();
               sel.addRange(newRange);
@@ -325,7 +343,7 @@ document
       } else {
         applyTransliterationToElement(paper, lang);
       }
-      
+
       __transliterateApplying = false;
     }
   });

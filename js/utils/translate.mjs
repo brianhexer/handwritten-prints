@@ -53,7 +53,8 @@ function getLangCodeFromFontLabel(label) {
   if (s.includes('chinese')) return LANG_CODES.chinese;
   if (s.includes('japanese')) return LANG_CODES.japanese;
   if (s.includes('korean')) return LANG_CODES.korean;
-  if (s.includes('cyrillic') || s.includes('russian')) return LANG_CODES.russian;
+  if (s.includes('cyrillic') || s.includes('russian'))
+    return LANG_CODES.russian;
   return null;
 }
 
