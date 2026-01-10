@@ -234,17 +234,32 @@ document
       if (!paper.dataset.originalHtml) {
         paper.dataset.originalHtml = paper.innerHTML;
       }
+      
+      // Save cursor position before transliteration
+      const sel = window.getSelection();
+      let savedOffset = 0;
+      let savedNode = null;
+      if (sel && sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+        savedNode = range.startContainer;
+        savedOffset = range.startOffset;
+      }
+      
       __transliterateApplying = true;
       requestAnimationFrame(() => {
         applyTransliterationToElement(paper, lang);
-        // Move caret to end to avoid offset confusion
-        const sel = window.getSelection();
-        if (sel) {
-          sel.removeAllRanges();
-          const range = document.createRange();
-          range.selectNodeContents(paper);
-          range.collapse(false);
-          sel.addRange(range);
+        
+        // Restore cursor position
+        if (savedNode && sel) {
+          try {
+            const newRange = document.createRange();
+            newRange.setStart(savedNode, Math.min(savedOffset, savedNode.length || savedNode.textContent.length));
+            newRange.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+          } catch (e) {
+            // If restoration fails, just leave cursor where it is
+          }
         }
         __transliterateApplying = false;
       });
