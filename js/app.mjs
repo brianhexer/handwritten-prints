@@ -9,7 +9,7 @@ import {
   deleteAll
 } from './generate-images.mjs';
 import { setInkColor, toggleDrawCanvas } from './utils/draw.mjs';
-import { transliterate, detectLangFromOptionLabel, applyTransliterationToElement } from './utils/transliterate.mjs';
+import { detectLangFromOptionLabel, applyTransliterationToElement } from './utils/transliterate.mjs';
 
 /**
  *
