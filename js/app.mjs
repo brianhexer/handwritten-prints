@@ -10,6 +10,7 @@ import {
 } from './generate-images.mjs';
 import { setInkColor, toggleDrawCanvas } from './utils/draw.mjs';
 import { detectLangFromOptionLabel, applyTransliterationToElement } from './utils/transliterate.mjs';
+import { translateText, getLangCodeFromFontLabel } from './utils/translate.mjs';
 
 /**
  *
@@ -201,6 +202,45 @@ const EVENT_MAP = {
           }
           applyTransliterationToElement(paper, lang);
         }
+      }
+    }
+  },
+  '#translate-button': {
+    on: 'click',
+    action: async () => {
+      const fontSelect = document.querySelector('#handwriting-font');
+      const label = fontSelect.options[fontSelect.selectedIndex].text;
+      const targetLang = getLangCodeFromFontLabel(label);
+      
+      if (!targetLang) {
+        alert('Please select a language font (Hindi, Tamil, Arabic, Chinese, Japanese, Korean, Russian) to translate to.');
+        return;
+      }
+      
+      const paper = document.querySelector('.page-a .paper-content');
+      const textToTranslate = paper.textContent.trim();
+      
+      if (!textToTranslate) {
+        alert('Please enter some text to translate.');
+        return;
+      }
+      
+      const button = document.querySelector('#translate-button');
+      const originalText = button.textContent;
+      button.textContent = 'Translating...';
+      button.disabled = true;
+      
+      try {
+        const translated = await translateText(textToTranslate, targetLang);
+        paper.textContent = translated;
+        // Clear original HTML since we've replaced with translation
+        delete paper.dataset.originalHtml;
+      } catch (error) {
+        alert('Translation failed. Please check your internet connection or try again later.');
+        console.error('Translation error:', error);
+      } finally {
+        button.textContent = originalText;
+        button.disabled = false;
       }
     }
   },
