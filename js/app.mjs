@@ -235,34 +235,58 @@ document
         paper.dataset.originalHtml = paper.innerHTML;
       }
       
-      // Save cursor position before transliteration
+      __transliterateApplying = true;
+      
+      // Save cursor position relative to paper content
       const sel = window.getSelection();
-      let savedOffset = 0;
-      let savedNode = null;
+      let cursorOffset = 0;
+      let currentNode = null;
+      
       if (sel && sel.rangeCount > 0) {
         const range = sel.getRangeAt(0);
-        savedNode = range.startContainer;
-        savedOffset = range.startOffset;
+        currentNode = range.startContainer;
+        cursorOffset = range.startOffset;
+        
+        // Calculate absolute offset from start of paper
+        const walker = document.createTreeWalker(paper, NodeFilter.SHOW_TEXT, null);
+        let absoluteOffset = 0;
+        let found = false;
+        while (walker.nextNode()) {
+          if (walker.currentNode === currentNode) {
+            absoluteOffset += cursorOffset;
+            found = true;
+            break;
+          }
+          absoluteOffset += walker.currentNode.textContent.length;
+        }
+        
+        if (found) {
+          // Apply transliteration
+          applyTransliterationToElement(paper, lang);
+          
+          // Restore cursor by counting through text nodes
+          const walker2 = document.createTreeWalker(paper, NodeFilter.SHOW_TEXT, null);
+          let currentOffset = 0;
+          while (walker2.nextNode()) {
+            const nodeLength = walker2.currentNode.textContent.length;
+            if (currentOffset + nodeLength >= absoluteOffset) {
+              const newRange = document.createRange();
+              newRange.setStart(walker2.currentNode, absoluteOffset - currentOffset);
+              newRange.collapse(true);
+              sel.removeAllRanges();
+              sel.addRange(newRange);
+              break;
+            }
+            currentOffset += nodeLength;
+          }
+        } else {
+          applyTransliterationToElement(paper, lang);
+        }
+      } else {
+        applyTransliterationToElement(paper, lang);
       }
       
-      __transliterateApplying = true;
-      requestAnimationFrame(() => {
-        applyTransliterationToElement(paper, lang);
-        
-        // Restore cursor position
-        if (savedNode && sel) {
-          try {
-            const newRange = document.createRange();
-            newRange.setStart(savedNode, Math.min(savedOffset, savedNode.length || savedNode.textContent.length));
-            newRange.collapse(true);
-            sel.removeAllRanges();
-            sel.addRange(newRange);
-          } catch (e) {
-            // If restoration fails, just leave cursor where it is
-          }
-        }
-        __transliterateApplying = false;
-      });
+      __transliterateApplying = false;
     }
   });
 
