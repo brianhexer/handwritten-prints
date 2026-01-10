@@ -9,6 +9,7 @@ import {
   deleteAll
 } from './generate-images.mjs';
 import { setInkColor, toggleDrawCanvas } from './utils/draw.mjs';
+import { transliterate, detectLangFromOptionLabel } from './utils/transliterate.mjs';
 
 /**
  *
@@ -42,8 +43,21 @@ const EVENT_MAP = {
   },
   '#handwriting-font': {
     on: 'change',
-    action: (e) =>
-      document.body.style.setProperty('--handwriting-font', e.target.value)
+    action: (e) => {
+      document.body.style.setProperty('--handwriting-font', e.target.value);
+      const autoToggle = document.querySelector('#auto-transliterate-toggle');
+      if (autoToggle && autoToggle.checked) {
+        const label = e.target.options[e.target.selectedIndex].text;
+        const lang = detectLangFromOptionLabel(label);
+        if (lang) {
+          const paper = document.querySelector('.page-a .paper-content');
+          if (!paper.dataset.originalText) {
+            paper.dataset.originalText = paper.textContent;
+          }
+          paper.textContent = transliterate(paper.textContent, lang);
+        }
+      }
+    }
   },
   '#font-size': {
     on: 'change',
@@ -143,6 +157,27 @@ const EVENT_MAP = {
   '.page-a .paper-content': {
     on: 'paste',
     action: formatText
+  },
+  '#auto-transliterate-toggle': {
+    on: 'change',
+    action: (e) => {
+      const paper = document.querySelector('.page-a .paper-content');
+      if (!e.target.checked && paper.dataset.originalText) {
+        paper.textContent = paper.dataset.originalText;
+        delete paper.dataset.originalText;
+      } else if (e.target.checked) {
+        // Immediately apply for current font
+        const fontSelect = document.querySelector('#handwriting-font');
+        const label = fontSelect.options[fontSelect.selectedIndex].text;
+        const lang = detectLangFromOptionLabel(label);
+        if (lang) {
+          if (!paper.dataset.originalText) {
+            paper.dataset.originalText = paper.textContent;
+          }
+          paper.textContent = transliterate(paper.textContent, lang);
+        }
+      }
+    }
   },
   '#paper-file': {
     on: 'change',
