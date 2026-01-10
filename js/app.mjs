@@ -46,15 +46,20 @@ const EVENT_MAP = {
     action: (e) => {
       document.body.style.setProperty('--handwriting-font', e.target.value);
       const autoToggle = document.querySelector('#auto-transliterate-toggle');
-      if (autoToggle && autoToggle.checked) {
-        const label = e.target.options[e.target.selectedIndex].text;
-        const lang = detectLangFromOptionLabel(label);
-        if (lang) {
-          const paper = document.querySelector('.page-a .paper-content');
-          if (!paper.dataset.originalText) {
-            paper.dataset.originalText = paper.textContent;
-          }
-          paper.textContent = transliterate(paper.textContent, lang);
+      const autoOn = !autoToggle || autoToggle.checked;
+      const label = e.target.options[e.target.selectedIndex].text;
+      const lang = detectLangFromOptionLabel(label);
+      const paper = document.querySelector('.page-a .paper-content');
+      if (lang && autoOn) {
+        if (!paper.dataset.originalText) {
+          paper.dataset.originalText = paper.textContent;
+        }
+        paper.textContent = transliterate(paper.textContent, lang);
+      } else {
+        // Restore original text if switching back to non-language fonts
+        if (paper.dataset.originalText) {
+          paper.textContent = paper.dataset.originalText;
+          delete paper.dataset.originalText;
         }
       }
     }
@@ -156,7 +161,26 @@ const EVENT_MAP = {
   },
   '.page-a .paper-content': {
     on: 'paste',
-    action: formatText
+    action: (e) => {
+      // keep original formatting behavior
+      formatText(e);
+      // then apply transliteration if enabled and applicable
+      const autoToggle = document.querySelector('#auto-transliterate-toggle');
+      const autoOn = !autoToggle || autoToggle.checked;
+      const fontSelect = document.querySelector('#handwriting-font');
+      const label = fontSelect.options[fontSelect.selectedIndex].text;
+      const lang = detectLangFromOptionLabel(label);
+      const paper = document.querySelector('.page-a .paper-content');
+      if (lang && autoOn) {
+        if (!paper.dataset.originalText) {
+          paper.dataset.originalText = paper.textContent;
+        }
+        // slight delay to let paste complete
+        setTimeout(() => {
+          paper.textContent = transliterate(paper.textContent, lang);
+        }, 0);
+      }
+    }
   },
   '#auto-transliterate-toggle': {
     on: 'change',
