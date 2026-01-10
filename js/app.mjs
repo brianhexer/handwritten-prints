@@ -9,7 +9,7 @@ import {
   deleteAll
 } from './generate-images.mjs';
 import { setInkColor, toggleDrawCanvas } from './utils/draw.mjs';
-import { transliterate, detectLangFromOptionLabel } from './utils/transliterate.mjs';
+import { transliterate, detectLangFromOptionLabel, applyTransliterationToElement } from './utils/transliterate.mjs';
 
 /**
  *
@@ -51,15 +51,15 @@ const EVENT_MAP = {
       const lang = detectLangFromOptionLabel(label);
       const paper = document.querySelector('.page-a .paper-content');
       if (lang && autoOn) {
-        if (!paper.dataset.originalText) {
-          paper.dataset.originalText = paper.textContent;
+        if (!paper.dataset.originalHtml) {
+          paper.dataset.originalHtml = paper.innerHTML;
         }
-        paper.textContent = transliterate(paper.textContent, lang);
+        applyTransliterationToElement(paper, lang);
       } else {
         // Restore original text if switching back to non-language fonts
-        if (paper.dataset.originalText) {
-          paper.textContent = paper.dataset.originalText;
-          delete paper.dataset.originalText;
+        if (paper.dataset.originalHtml) {
+          paper.innerHTML = paper.dataset.originalHtml;
+          delete paper.dataset.originalHtml;
         }
       }
     }
@@ -186,19 +186,19 @@ const EVENT_MAP = {
     on: 'change',
     action: (e) => {
       const paper = document.querySelector('.page-a .paper-content');
-      if (!e.target.checked && paper.dataset.originalText) {
-        paper.textContent = paper.dataset.originalText;
-        delete paper.dataset.originalText;
+      if (!e.target.checked && paper.dataset.originalHtml) {
+        paper.innerHTML = paper.dataset.originalHtml;
+        delete paper.dataset.originalHtml;
       } else if (e.target.checked) {
         // Immediately apply for current font
         const fontSelect = document.querySelector('#handwriting-font');
         const label = fontSelect.options[fontSelect.selectedIndex].text;
         const lang = detectLangFromOptionLabel(label);
         if (lang) {
-          if (!paper.dataset.originalText) {
-            paper.dataset.originalText = paper.textContent;
+          if (!paper.dataset.originalHtml) {
+            paper.dataset.originalHtml = paper.innerHTML;
           }
-          paper.textContent = transliterate(paper.textContent, lang);
+          applyTransliterationToElement(paper, lang);
         }
       }
     }

@@ -8,6 +8,11 @@ const MAPS = {
     j: 'ஒ', k: 'ஓ', l: 'ஔ', m: 'க', n: 'ச', o: 'ட', p: 'த', q: 'ப', r: 'ர',
     s: 'ல', t: 'ள', u: 'ழ', v: 'வ', w: 'ஞ', x: 'ங', y: 'ண', z: 'ய'
   },
+  chinese: {
+    a: '的', b: '一', c: '是', d: '在', e: '我', f: '有', g: '不', h: '这', i: '人',
+    j: '他', k: '中', l: '大', m: '来', n: '上', o: '国', p: '个', q: '到', r: '说',
+    s: '们', t: '为', u: '子', v: '而', w: '也', x: '小', y: '心', z: '见'
+  },
   arabic: {
     a: 'ا', b: 'ب', c: 'ج', d: 'د', e: 'ه', f: 'ف', g: 'غ', h: 'ح', i: 'ي',
     j: 'ج', k: 'ك', l: 'ل', m: 'م', n: 'ن', o: 'و', p: 'پ', q: 'ق', r: 'ر',
@@ -46,6 +51,18 @@ function transliterate(text, lang) {
     .join('');
 }
 
+function applyTransliterationToElement(el, lang) {
+  const map = MAPS[lang];
+  if (!map) return;
+  // Walk text nodes to preserve <br/> and other markup
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  for (const node of nodes) {
+    node.nodeValue = transliterate(node.nodeValue, lang);
+  }
+}
+
 function detectLangFromOptionLabel(label) {
   // Label examples: "Kavivanar (Tamil)", "Reem Kufi Ink (Arabic)"
   const match = label.match(/\(([^)]+)\)/);
@@ -53,6 +70,7 @@ function detectLangFromOptionLabel(label) {
     const l = match[1].toLowerCase();
     if (l.includes('tamil')) return 'tamil';
     if (l.includes('arabic')) return 'arabic';
+    if (l.includes('chinese')) return 'chinese';
     if (l.includes('japanese')) return 'japanese';
     if (l.includes('korean')) return 'korean';
     if (l.includes('cyrillic')) return 'cyrillic';
@@ -61,10 +79,11 @@ function detectLangFromOptionLabel(label) {
   const s = label.toLowerCase();
   if (s.includes('anek tamil') || s.includes('kavivanar')) return 'tamil';
   if (s.includes('reem kufi')) return 'arabic';
+  if (s.includes('ma shan zheng')) return 'chinese';
   if (s.includes('yomogi')) return 'japanese';
   if (s.includes('nanum')) return 'korean';
   if (s.includes('marck script')) return 'cyrillic';
   return null;
 }
 
-export { transliterate, detectLangFromOptionLabel };
+export { transliterate, detectLangFromOptionLabel, applyTransliterationToElement };
