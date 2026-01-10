@@ -51,6 +51,54 @@ const MAPS = {
     '(': '(',
     ')': ')'
   },
+  hindi: {
+    a: 'अ',
+    b: 'ब',
+    c: 'च',
+    d: 'द',
+    e: 'ए',
+    f: 'फ',
+    g: 'ग',
+    h: 'ह',
+    i: 'इ',
+    j: 'ज',
+    k: 'क',
+    l: 'ल',
+    m: 'म',
+    n: 'न',
+    o: 'ओ',
+    p: 'प',
+    q: 'क',
+    r: 'र',
+    s: 'स',
+    t: 'त',
+    u: 'उ',
+    v: 'व',
+    w: 'व',
+    x: 'क्ष',
+    y: 'य',
+    z: 'ज़',
+    0: '०',
+    1: '१',
+    2: '२',
+    3: '३',
+    4: '४',
+    5: '५',
+    6: '६',
+    7: '७',
+    8: '८',
+    9: '९',
+    ' ': ' ',
+    '.': '।',
+    ',': ',',
+    '!': '!',
+    '?': '?',
+    ':': ':',
+    ';': ';',
+    '-': '-',
+    '(': '(',
+    ')': ')'
+  },
   chinese: {
     a: '的',
     b: '一',
@@ -326,6 +374,7 @@ function detectLangFromOptionLabel(label) {
   const match = label.match(/\(([^)]+)\)/);
   if (match) {
     const l = match[1].toLowerCase();
+    if (l.includes('hindi')) return 'hindi';
     if (l.includes('tamil')) return 'tamil';
     if (l.includes('arabic')) return 'arabic';
     if (l.includes('chinese')) return 'chinese';
@@ -335,6 +384,12 @@ function detectLangFromOptionLabel(label) {
   }
   // Fallback: try known font names
   const s = label.toLowerCase();
+  if (
+    s.includes('kalam') ||
+    s.includes('kruti-dev') ||
+    s.includes('kruti')
+  )
+    return 'hindi';
   if (s.includes('anek tamil') || s.includes('kavivanar')) return 'tamil';
   if (s.includes('reem kufi')) return 'arabic';
   if (s.includes('ma shan zheng')) return 'chinese';
