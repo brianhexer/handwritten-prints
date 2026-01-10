@@ -48,14 +48,63 @@ const EVENT_MAP = {
   },
   '#handwriting-font': {
     on: 'change',
-    action: (e) => {
+    action: async (e) => {
       document.body.style.setProperty('--handwriting-font', e.target.value);
       const autoToggle = document.querySelector('#auto-transliterate-toggle');
       const autoOn = !autoToggle || autoToggle.checked;
       const label = e.target.options[e.target.selectedIndex].text;
       const lang = detectLangFromOptionLabel(label);
       const paper = document.querySelector('.page-a .paper-content');
-      if (lang && autoOn) {
+
+      // Check if this is a language font that needs translation
+      const targetLangCode = getLangCodeFromFontLabel(label);
+
+      if (targetLangCode && autoOn && paper.textContent.trim()) {
+        // Ask user if they want to translate
+        const shouldTranslate = confirm(
+          `Translate entire document to ${label.split('(')[0].trim()}?`
+        );
+
+        if (shouldTranslate) {
+          const button = document.querySelector('#translate-button');
+          if (button) {
+            const originalText = button.textContent;
+            button.textContent = 'Translating...';
+            button.disabled = true;
+
+            try {
+              const textToTranslate = paper.textContent.trim();
+              const translated = await translateText(
+                textToTranslate,
+                targetLangCode
+              );
+              paper.textContent = translated;
+              delete paper.dataset.originalHtml;
+            } catch (error) {
+              alert(
+                'Translation failed. Using character transliteration instead.'
+              );
+              // Fallback to transliteration
+              if (lang) {
+                if (!paper.dataset.originalHtml) {
+                  paper.dataset.originalHtml = paper.innerHTML;
+                }
+                applyTransliterationToElement(paper, lang);
+              }
+            } finally {
+              button.textContent = originalText;
+              button.disabled = false;
+            }
+          }
+        } else if (lang) {
+          // User declined translation, use transliteration
+          if (!paper.dataset.originalHtml) {
+            paper.dataset.originalHtml = paper.innerHTML;
+          }
+          applyTransliterationToElement(paper, lang);
+        }
+      } else if (lang && autoOn) {
+        // No text yet or transliteration mode, use character mapping
         if (!paper.dataset.originalHtml) {
           paper.dataset.originalHtml = paper.innerHTML;
         }
