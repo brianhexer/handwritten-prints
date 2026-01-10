@@ -27,6 +27,7 @@ import { transliterate, detectLangFromOptionLabel, applyTransliterationToElement
  */
 
 const pageEl = document.querySelector('.page-a');
+let __transliterateApplying = false;
 
 const setTextareaStyle = (attrib, v) => (pageEl.style[attrib] = v);
 
@@ -172,12 +173,12 @@ const EVENT_MAP = {
       const lang = detectLangFromOptionLabel(label);
       const paper = document.querySelector('.page-a .paper-content');
       if (lang && autoOn) {
-        if (!paper.dataset.originalText) {
-          paper.dataset.originalText = paper.textContent;
+        if (!paper.dataset.originalHtml) {
+          paper.dataset.originalHtml = paper.innerHTML;
         }
         // slight delay to let paste complete
         setTimeout(() => {
-          paper.textContent = transliterate(paper.textContent, lang);
+          applyTransliterationToElement(paper, lang);
         }, 0);
       }
     }
@@ -217,6 +218,38 @@ for (const eventSelector in EVENT_MAP) {
       EVENT_MAP[eventSelector].action
     );
 }
+
+// Live transliteration while typing to mimic Hindi behavior
+document
+  .querySelector('.page-a .paper-content')
+  .addEventListener('input', () => {
+    if (__transliterateApplying) return;
+    const autoToggle = document.querySelector('#auto-transliterate-toggle');
+    const autoOn = !autoToggle || autoToggle.checked;
+    const fontSelect = document.querySelector('#handwriting-font');
+    const label = fontSelect.options[fontSelect.selectedIndex].text;
+    const lang = detectLangFromOptionLabel(label);
+    const paper = document.querySelector('.page-a .paper-content');
+    if (lang && autoOn) {
+      if (!paper.dataset.originalHtml) {
+        paper.dataset.originalHtml = paper.innerHTML;
+      }
+      __transliterateApplying = true;
+      requestAnimationFrame(() => {
+        applyTransliterationToElement(paper, lang);
+        // Move caret to end to avoid offset confusion
+        const sel = window.getSelection();
+        if (sel) {
+          sel.removeAllRanges();
+          const range = document.createRange();
+          range.selectNodeContents(paper);
+          range.collapse(false);
+          sel.addRange(range);
+        }
+        __transliterateApplying = false;
+      });
+    }
+  });
 
 /**
  * This makes toggles, accessible.
