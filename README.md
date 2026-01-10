@@ -1,5 +1,5 @@
 <p align="center">
-<img alt="Handwritten-Prints title image" src="https://res.cloudinary.com/saurabhdaware/image/upload/w_400/v1586015094/saurabh2019/text-to-handwriting-title.png" /> 
+<img alt="Handwritten-Prints title image" src="Handwritten Prints.png" /> 
 <br/><b><a href="https://brianhexer.github.io/handwritten-prints/">Handwritten Prints</a></b><br/><br/><img alt="GitHub License MIT" src="https://img.shields.io/github/license/brianhexer/handwritten-prints?style=for-the-badge&labelColor=black&logo=github" /><br/><br/> A powerful tool that converts text to an image that looks like handwriting. Perfect for creating natural-looking handwritten documents!
 
 </p>
