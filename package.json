@@ -1,7 +1,7 @@
 {
-  "name": "text-to-handwriting",
+  "name": "handwritten-prints",
   "version": "1.0.0-rc.1",
-  "description": "Hey everyone! text-to-handwriting is a tool that lets you generate image that looks like handwriting from text.",
+  "description": "Hey everyone! handwritten-prints is a tool that lets you generate image that looks like handwriting from text.",
   "main": "js/app.js",
   "directories": {
     "lib": "lib"
@@ -16,15 +16,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/saurabhdaware/text-to-handwriting.git"
+    "url": "git+https://github.com/brianhexer/handwritten-prints.git"
   },
   "keywords": [],
-  "author": "Saurabh Daware <saurabhdaware99@gmail.com> (https://saurabhdaware.in/)",
+  "author": "Brian Hexer <brianhexer@gmail.com> (https://saurabhdaware.in/)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/saurabhdaware/text-to-handwriting/issues"
+    "url": "https://github.com/brianhexer/handwritten-prints/issues"
   },
-  "homepage": "https://github.com/saurabhdaware/text-to-handwriting#readme",
+  "homepage": "https://github.com/brianhexer/handwritten-prints#readme",
   "devDependencies": {
     "cypress": "^4.4.1",
     "eslint": "^7.0.0",
