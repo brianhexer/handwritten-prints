@@ -69,9 +69,9 @@ const EVENT_MAP = {
 
         try {
           // Always translate from original English content
-          const originalText = paper.dataset.originalHtml
-            .replace(/<[^>]*>/g, '')
-            .trim();
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = paper.dataset.originalHtml;
+          const originalText = (tempDiv.textContent || tempDiv.innerText || '').trim();
           const translated = await translateText(originalText, targetLangCode);
           paper.textContent = translated;
         } catch (error) {
