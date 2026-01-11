@@ -284,7 +284,9 @@ fetch(
 )
   .then((res) => res.json())
   .then((res) => {
-    document.querySelector('#project-contributors').innerHTML = res
+    const contributorsEl = document.querySelector('#project-contributors');
+    if (!contributorsEl) return; // gracefully skip if section not present
+    contributorsEl.innerHTML = res
       .map(
         (contributor) => /* html */ `
         <div class="contributor-profile shadow">
