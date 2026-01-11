@@ -9,10 +9,7 @@ import {
   deleteAll
 } from './generate-images.mjs';
 import { setInkColor, toggleDrawCanvas } from './utils/draw.mjs';
-import {
-  detectLangFromOptionLabel,
-  applyTransliterationToElement
-} from './utils/transliterate.mjs';
+import { detectLangFromOptionLabel } from './utils/transliterate.mjs';
 import { translateText, getLangCodeFromFontLabel } from './utils/translate.mjs';
 
 /**
@@ -31,7 +28,33 @@ import { translateText, getLangCodeFromFontLabel } from './utils/translate.mjs';
  */
 
 const pageEl = document.querySelector('.page-a');
-let __transliterateApplying = false;
+
+// Translate the paper content to the provided language code using the original English content.
+const translatePaperContent = async (paper, targetLangCode) => {
+  if (!targetLangCode) return;
+
+  if (!paper.dataset.originalHtml) {
+    paper.dataset.originalHtml = paper.innerHTML;
+  }
+
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = paper.dataset.originalHtml;
+  const originalText = (tempDiv.textContent || tempDiv.innerText || '').trim();
+  if (!originalText) return;
+
+  const originalCursor = document.body.style.cursor;
+  document.body.style.cursor = 'progress';
+
+  try {
+    const translated = await translateText(originalText, targetLangCode);
+    paper.textContent = translated;
+  } catch (error) {
+    console.error('Translate error:', error);
+    paper.innerHTML = paper.dataset.originalHtml;
+  } finally {
+    document.body.style.cursor = originalCursor;
+  }
+};
 
 const setTextareaStyle = (attrib, v) => (pageEl.style[attrib] = v);
 
@@ -60,36 +83,13 @@ const EVENT_MAP = {
       const targetLangCode = getLangCodeFromFontLabel(label);
 
       if (targetLangCode && autoOn && paper.textContent.trim()) {
-        const originalCursor = document.body.style.cursor;
-        // Always save original English text if not already saved
-        if (!paper.dataset.originalHtml) {
-          paper.dataset.originalHtml = paper.innerHTML;
-        }
-        document.body.style.cursor = 'progress';
-
-        try {
-          // Always translate from original English content
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = paper.dataset.originalHtml;
-          const originalText = (tempDiv.textContent || tempDiv.innerText || '').trim();
-          const translated = await translateText(originalText, targetLangCode);
-          paper.textContent = translated;
-        } catch (error) {
-          console.error('Translate on font change error:', error);
-          if (lang) {
-            // On translation failure, apply transliteration instead
-            paper.innerHTML = paper.dataset.originalHtml;
-            applyTransliterationToElement(paper, lang);
-          }
-        } finally {
-          document.body.style.cursor = originalCursor;
-        }
+        // Translate from the saved original English content
+        await translatePaperContent(paper, targetLangCode);
       } else if (lang && autoOn) {
-        // No text yet or transliteration mode, use character mapping
+        // Keep original for future translations
         if (!paper.dataset.originalHtml) {
           paper.dataset.originalHtml = paper.innerHTML;
         }
-        applyTransliterationToElement(paper, lang);
       } else {
         // Restore original text if switching back to non-language fonts
         if (paper.dataset.originalHtml) {
@@ -199,41 +199,31 @@ const EVENT_MAP = {
     action: (e) => {
       // keep original formatting behavior
       formatText(e);
-      // then apply transliteration if enabled and applicable
+      // Preserve original content for translation
       const autoToggle = document.querySelector('#auto-transliterate-toggle');
       const autoOn = !autoToggle || autoToggle.checked;
-      const fontSelect = document.querySelector('#handwriting-font');
-      const label = fontSelect.options[fontSelect.selectedIndex].text;
-      const lang = detectLangFromOptionLabel(label);
-      const paper = document.querySelector('.page-a .paper-content');
-      if (lang && autoOn) {
-        if (!paper.dataset.originalHtml) {
-          paper.dataset.originalHtml = paper.innerHTML;
-        }
-        // slight delay to let paste complete
-        setTimeout(() => {
-          applyTransliterationToElement(paper, lang);
-        }, 0);
+      if (autoOn) {
+        const paper = document.querySelector('.page-a .paper-content');
+        paper.dataset.originalHtml = paper.innerHTML;
       }
     }
   },
   '#auto-transliterate-toggle': {
     on: 'change',
-    action: (e) => {
+    action: async (e) => {
       const paper = document.querySelector('.page-a .paper-content');
       if (!e.target.checked && paper.dataset.originalHtml) {
         paper.innerHTML = paper.dataset.originalHtml;
         delete paper.dataset.originalHtml;
-      } else if (e.target.checked) {
-        // Immediately apply for current font
+        return;
+      }
+
+      if (e.target.checked) {
         const fontSelect = document.querySelector('#handwriting-font');
         const label = fontSelect.options[fontSelect.selectedIndex].text;
-        const lang = detectLangFromOptionLabel(label);
-        if (lang) {
-          if (!paper.dataset.originalHtml) {
-            paper.dataset.originalHtml = paper.innerHTML;
-          }
-          applyTransliterationToElement(paper, lang);
+        const targetLangCode = getLangCodeFromFontLabel(label);
+        if (targetLangCode) {
+          await translatePaperContent(paper, targetLangCode);
         }
       }
     }
@@ -257,82 +247,13 @@ for (const eventSelector in EVENT_MAP) {
 document
   .querySelector('.page-a .paper-content')
   .addEventListener('input', () => {
-    if (__transliterateApplying) return;
+    // Keep the latest English content stored for translation when enabled
     const autoToggle = document.querySelector('#auto-transliterate-toggle');
     const autoOn = !autoToggle || autoToggle.checked;
-    const fontSelect = document.querySelector('#handwriting-font');
-    const label = fontSelect.options[fontSelect.selectedIndex].text;
-    const lang = detectLangFromOptionLabel(label);
+    if (!autoOn) return;
+
     const paper = document.querySelector('.page-a .paper-content');
-    if (lang && autoOn) {
-      if (!paper.dataset.originalHtml) {
-        paper.dataset.originalHtml = paper.innerHTML;
-      }
-
-      __transliterateApplying = true;
-
-      // Save cursor position relative to paper content
-      const sel = window.getSelection();
-      let cursorOffset = 0;
-      let currentNode = null;
-
-      if (sel && sel.rangeCount > 0) {
-        const range = sel.getRangeAt(0);
-        currentNode = range.startContainer;
-        cursorOffset = range.startOffset;
-
-        // Calculate absolute offset from start of paper
-        const walker = document.createTreeWalker(
-          paper,
-          NodeFilter.SHOW_TEXT,
-          null
-        );
-        let absoluteOffset = 0;
-        let found = false;
-        while (walker.nextNode()) {
-          if (walker.currentNode === currentNode) {
-            absoluteOffset += cursorOffset;
-            found = true;
-            break;
-          }
-          absoluteOffset += walker.currentNode.textContent.length;
-        }
-
-        if (found) {
-          // Apply transliteration
-          applyTransliterationToElement(paper, lang);
-
-          // Restore cursor by counting through text nodes
-          const walker2 = document.createTreeWalker(
-            paper,
-            NodeFilter.SHOW_TEXT,
-            null
-          );
-          let currentOffset = 0;
-          while (walker2.nextNode()) {
-            const nodeLength = walker2.currentNode.textContent.length;
-            if (currentOffset + nodeLength >= absoluteOffset) {
-              const newRange = document.createRange();
-              newRange.setStart(
-                walker2.currentNode,
-                absoluteOffset - currentOffset
-              );
-              newRange.collapse(true);
-              sel.removeAllRanges();
-              sel.addRange(newRange);
-              break;
-            }
-            currentOffset += nodeLength;
-          }
-        } else {
-          applyTransliterationToElement(paper, lang);
-        }
-      } else {
-        applyTransliterationToElement(paper, lang);
-      }
-
-      __transliterateApplying = false;
-    }
+    paper.dataset.originalHtml = paper.innerHTML;
   });
 
 /**
