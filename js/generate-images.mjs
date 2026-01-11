@@ -71,7 +71,7 @@ export async function generateImages() {
 
       while (
         paperContentEl.scrollHeight <= clientHeight &&
-        wordCount <= splitContent.length
+        wordCount < splitContent.length
       ) {
         wordString = wordArray.join(' ');
         wordArray.push(splitContent[wordCount]);
